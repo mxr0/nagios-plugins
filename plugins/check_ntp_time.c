@@ -46,6 +46,7 @@ static char *server_address=NULL;
 static char *port="123";
 static int verbose=0;
 static int quiet=0;
+static int ignore=0;
 static char *owarn="60";
 static char *ocrit="120";
 static int time_offset=0;
@@ -251,7 +252,7 @@ int best_offset_server(const ntp_server_results *slist, int nservers){
 		/* Sort out servers that didn't respond or responede with a 0 stratum;
 		 * stratum 0 is for reference clocks so no NTP server should ever report
 		 * a stratum 0 */
-		if ( slist[cserver].stratum == 0){
+		if ( slist[cserver].stratum == 0 && ignore == 0){
 			if (verbose) printf("discarding peer %d: stratum=%d\n", cserver, slist[cserver].stratum);
 			continue;
 		}
@@ -455,6 +456,7 @@ int process_arguments(int argc, char **argv){
 		{"use-ipv4", no_argument, 0, '4'},
 		{"use-ipv6", no_argument, 0, '6'},
 		{"quiet", no_argument, 0, 'q'},
+		{"ignore-stratum", no_argument, 0, 'i'},
 		{"time-offset", optional_argument, 0, 'o'},
 		{"warning", required_argument, 0, 'w'},
 		{"critical", required_argument, 0, 'c'},
@@ -469,7 +471,7 @@ int process_arguments(int argc, char **argv){
 		usage ("\n");
 
 	while (1) {
-		c = getopt_long (argc, argv, "Vhv46qw:c:t:H:p:o:", longopts, &option);
+		c = getopt_long (argc, argv, "Vhv46qiw:c:t:H:p:o:", longopts, &option);
 		if (c == -1 || c == EOF || c == 1)
 			break;
 
@@ -507,6 +509,9 @@ int process_arguments(int argc, char **argv){
 			break;
 		case 'o':
 			time_offset=atoi(optarg);
+                        break;
+		case 'i':
+			ignore= 1;
                         break;
 		case '4':
 			address_family = AF_INET;
@@ -616,6 +621,8 @@ void print_help(void){
 	printf (UT_HOST_PORT, 'p', "123");
 	printf (" %s\n", "-q, --quiet");
 	printf ("    %s\n", _("Returns UNKNOWN instead of CRITICAL if offset cannot be found"));
+	printf (" %s\n", "-i, --ignore-stratum");
+	printf ("    %s\n", _("accept stratum 0 servers"));
 	printf (" %s\n", "-w, --warning=THRESHOLD");
 	printf ("    %s\n", _("Offset to result in warning status (seconds)"));
 	printf (" %s\n", "-c, --critical=THRESHOLD");
